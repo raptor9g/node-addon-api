@@ -544,3 +544,42 @@ name of the property.
 One or more of `napi_property_attributes`.
 
 Returns `Napi::PropertyDescriptor` object that represents an instance value
+
+### FinalizeCallback
+
+Allows user to be notified when externally-owned data is ready to be cleaned up 
+because the object with which it was associated with, has been garbage-collected.
+
+```cpp
+static void T::FinalizeCallback(napi_env env, void* data, void* hint);
+```
+
+- `[in] env`: `napi_env`.
+- `[in] data`: pointer to the native instance.  Must be cast in method e.g.
+    `reinterpret_cast<T*>(data)`.
+- `[in] hint`: Optional contextual hint that is passed to the finalize callback.
+
+`T::FinalizeCallback`is optional, defined on the derived class, must be public 
+and implements [napi_finalize](https://nodejs.org/api/n-api.html#n_api_napi_finalize "N-API napi_finalize documentation").
+
+NOTE: Overrides default `Napi::ObjectWrap::FinalizeCallback`. The default 
+`Napi::ObjectWrap::FinalizeCallback` frees the native instance.  A user defined 
+finalzier is, therefore, responsible for freeing the native instance.
+
+```cpp
+#include <napi.h>
+class Example : public Napi::ObjectWrap<Example> {
+  public:
+  static void FinalizeCallback(napi_env env, void* data, void* hint);
+  //...
+};
+
+void Example::FinalizeCallback(napi_env env, void* data, void* hint)
+{
+  Example* instance = reinterpret_cast<Example*>(data);
+  //Do stuff...
+
+  //Free native instance
+  delete instance;
+}
+```
